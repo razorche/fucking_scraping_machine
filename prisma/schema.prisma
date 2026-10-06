@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum WorkspaceRole {
@@ -102,6 +103,27 @@ enum SuppressionReason {
   GLOBAL
 }
 
+enum LeadPipelineStatus {
+  NEW
+  READY
+  QUEUED
+  SCHEDULED
+  SENT
+  OPENED
+  CLICKED
+  REPLIED
+  POSITIVE
+  NEGATIVE
+  BOUNCED
+  BLOCKED
+  OOO
+  AUTO_REPLY
+  OPTED_OUT
+  INVALID
+  PAUSED
+  COMPLETED
+}
+
 model Workspace {
   id        String   @id @default(cuid())
   name      String
@@ -162,13 +184,16 @@ model GmailAccount {
   sendWindowEnd   String?
   historyId       String?
   watchExpiresAt  DateTime?
-  lastSyncAt      DateTime?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  lastSyncAt       DateTime?
+  lastErrorAt      DateTime?
+  lastErrorMessage String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  sends       SendRecord[]
-  campaigns   Campaign[] @relation("CampaignSendingAccount")
+  workspace        Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sends            SendRecord[]
+  campaigns        Campaign[]              @relation("CampaignSendingAccount")
+  campaignAccounts CampaignGmailAccount[]
 
   @@unique([workspaceId, email])
   @@index([workspaceId, health])
@@ -190,6 +215,10 @@ model Lead {
   country            String?
   tags               String[]               @default([])
   verificationStatus LeadVerificationStatus @default(UNKNOWN)
+  leadStatus         LeadPipelineStatus     @default(NEW)
+  ownerName          String?
+  dotNumber          String?
+  powerUnits         Int?
   source             String?
   sourceMeta         Json?
   customFields       Json?
@@ -203,7 +232,9 @@ model Lead {
 
   @@unique([workspaceId, emailNormalized])
   @@index([workspaceId, verificationStatus])
+  @@index([workspaceId, leadStatus])
   @@index([workspaceId, company])
+  @@index([workspaceId, state])
 }
 
 model SuppressionEntry {
@@ -252,13 +283,29 @@ model Campaign {
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
-  workspace       Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  sendingAccount  GmailAccount?      @relation("CampaignSendingAccount", fields: [sendingAccountId], references: [id])
-  sequence        Sequence?
-  enrollments     CampaignEnrollment[]
-  queueJobs       QueueJob[]
+  workspace        Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sendingAccount   GmailAccount?            @relation("CampaignSendingAccount", fields: [sendingAccountId], references: [id])
+  gmailAccounts    CampaignGmailAccount[]
+  sequence         Sequence?
+  enrollments      CampaignEnrollment[]
+  queueJobs        QueueJob[]
 
   @@index([workspaceId, status])
+}
+
+model CampaignGmailAccount {
+  id             String   @id @default(cuid())
+  campaignId     String
+  gmailAccountId String
+  priority       Int      @default(0)
+  enabled        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  campaign     Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  gmailAccount GmailAccount @relation(fields: [gmailAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, gmailAccountId])
+  @@index([campaignId, enabled, priority])
 }
 
 model Sequence {

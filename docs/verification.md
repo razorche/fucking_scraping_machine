@@ -1,24 +1,18 @@
 # FOM verification log
 
-## 2026-10-06 — Milestone M1–M3 baseline
-
-Commands to run locally (requires `DATABASE_URL` only for Prisma migrate, not for unit tests):
-
-| Check | Command | Expected |
-|-------|---------|----------|
-| Unit tests | `npm run test` | All pass |
-| Lint | `npm run lint` | No errors |
-| Typecheck | `npm run typecheck` | Clean |
-| Build | `npm run build` | Success |
-| Prisma validate | `npx prisma validate` | Valid schema |
-
-### Recorded results (2026-10-06)
+## 2026-10-06 — Production sprint
 
 | Check | Result |
 |-------|--------|
-| `npm run test` | 5 tests passed (normalize-email, token-vault, safe-entry-path) |
+| `npm run test` | 7 tests pass |
 | `npm run lint` | Pass |
 | `npm run typecheck` | Pass |
-| `npm run build` | Pass — static routes for dashboard shell |
-| `npx prisma validate` | Requires `DATABASE_URL` in environment |
-| `npx prisma generate` | Pass (Prisma 6.19.2) |
+| `npm run build` | Pass on Vercel (local may EPERM if dev server locks Prisma DLL) |
+
+### Manual smoke (production)
+
+1. `/lidovi` — upload CSV/ZIP, preview, commit
+2. `/naloge` — connect 2+ Gmail accounts
+3. `/kampanje` — create + launch, verify `SendRecord` in DB
+4. `/api/cron/process-queue` — Vercel cron or manual with `CRON_SECRET`
+5. `/analitika` — counters update

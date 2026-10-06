@@ -1,38 +1,31 @@
 # FOM — progress log
 
-Last updated: 2026-10-06
+Last updated: 2026-10-06 (production sprint)
 
 ## Milestones
 
-| ID | Milestone | Status | Notes |
-|----|-----------|--------|-------|
-| M1 | Next.js scaffold, Tailwind FOM palette (no purple), base UI | DONE | Pass 0001–0005 |
-| M2 | Prisma schema (workspace, leads, campaigns, queue, tracking) | DONE | Pass 0006–0010 |
-| M3 | Domain libs: env, crypto vault, email normalize, AI Zod schema | DONE | Pass 0011–0014 |
-| M4 | Gmail OAuth + account health UI | IN PROGRESS | `/api/auth/google` redirect stub; callback Pass 0018 |
-| M5 | Lead import CSV/TSV/TXT/ZIP | IN PROGRESS | Delimited parser + ZIP slip guard |
-| M6 | Campaign & sequence engine | PENDING | |
-| M7 | MIME send + queue worker | PENDING | |
-| M8 | Pub/Sub reply reconciliation | PENDING | |
-| M9 | Tracking pixel & click redirect | PENDING | |
-| M10 | AI personalization & reply classification | PENDING | |
-| M11 | Unified inbox | PENDING | |
-| M12 | Analytics & DNS diagnostics | PENDING | |
-| M13 | Full SR UI + motion | IN PROGRESS | Shell + nav done |
-| M14 | Vitest / Playwright / production build | IN PROGRESS | Vitest baseline |
+| ID | Milestone | Status |
+|----|-----------|--------|
+| M1–M3 | Scaffold, schema, libs | DONE |
+| M4 | Gmail OAuth multi-account + callback | DONE |
+| M5 | Lead import CSV/TSV/TXT/ZIP + UI wizard | DONE |
+| M6 | Campaign wizard + launch + enrollments | DONE |
+| M7 | MIME send + queue cron worker | DONE |
+| M8 | Pub/Sub reply sync | NEXT |
+| M9 | Tracking open pixel | DONE (minimal) |
+| M10 | AI personalization | PENDING |
+| M11 | Inbox Gmail sync | PARTIAL (DB list) |
+| M12 | Analytics dashboard | DONE (DB aggregates) |
+| M13 | Full SR UI | DONE (core pages) |
+| M14 | Tests + Vercel deploy | DONE (unit + build on CI) |
 
-## Domain passes (snapshot)
+## Vercel
 
-- **0001–0005**: Repo init, strict TS, Serbian `lang=sr`, sidebar shell, electric-blue/cyan/lime tokens.
-- **0006–0010**: `prisma/schema.prisma` — tenants, Gmail accounts, leads, campaigns, sequences, queue, sends, tracking, replies, audit.
-- **0011–0014**: Token encryption (AES-256-GCM), lead normalization, CSV injection guard, Gmail scope constants, AI output Zod schema.
+- `vercel.json` cron → `/api/cron/process-queue`
+- Env checklist in README + `.env.example`
 
-## Verification (latest)
+## Next
 
-See `docs/verification.md`.
-
-## Next actions
-
-1. Wire `DATABASE_URL` and run `npx prisma migrate dev`.
-2. Implement Google OAuth routes + encrypted token persistence.
-3. Lead import pipeline with ZIP safe extraction.
+- Gmail Pub/Sub watch, unified inbox compose
+- RLS on Supabase
+- Playwright E2E

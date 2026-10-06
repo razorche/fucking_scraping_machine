@@ -5,9 +5,13 @@ Produkcioni B2B cold outreach (Next.js + Supabase/Postgres + Gmail API).
 ## Vercel
 
 1. Import repo, framework **Next.js**, build: `npm run build`.
-2. Environment variables — kopiraj iz `.env.example` (vrednosti iz Supabase / Google Cloud).
-3. Gmail OAuth redirect: `https://<tvoj-domen>/api/auth/google/callback` (+ isti URI u Google Cloud Credentials).
-4. Provera posle deploya: `/api/health` i `/api/setup/status`.
+2. Environment variables — kopiraj iz `.env.example` (Supabase, Google OAuth, `CRON_SECRET`, `FOM_*`).
+3. Production URLs:
+   - `NEXT_PUBLIC_APP_URL=https://fucking-scraping-machine.vercel.app`
+   - `GOOGLE_OAUTH_REDIRECT_URI=https://fucking-scraping-machine.vercel.app/api/auth/google/callback`
+4. Gmail OAuth redirect mora biti isti u Google Cloud Credentials.
+5. Cron: `vercel.json` poziva `/api/cron/process-queue` (queue worker).
+6. Smoke: `/api/health`, `/api/setup/status`, uvoz na `/lidovi`, Gmail na `/naloge`, kampanja na `/kampanje`.
 
 ## Getting Started
 
