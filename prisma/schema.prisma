@@ -1,0 +1,412 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum GmailAccountHealth {
+  CONNECTED
+  TOKEN_EXPIRED
+  REVOKED
+  RATE_LIMITED
+  SEND_DISABLED
+  WATCH_STALE
+  ERROR
+}
+
+enum LeadVerificationStatus {
+  UNKNOWN
+  VALID_FORMAT
+  VERIFIED
+  RISKY
+  INVALID
+  BOUNCED
+  SUPPRESSED
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ACTIVE
+  PAUSED
+  COMPLETED
+  STOPPED
+  BOUNCED
+  UNSUBSCRIBED
+  REPLIED
+}
+
+enum SequenceStepType {
+  EMAIL
+  WAIT
+  CONDITION
+  STOP
+  MANUAL_TASK
+  WEBHOOK
+}
+
+enum QueueJobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  DEAD
+  CANCELLED
+}
+
+enum SendOutcome {
+  QUEUED
+  SENT
+  DEFERRED
+  FAILED
+  BOUNCED
+  BLOCKED
+  SKIPPED
+}
+
+enum ReplyClassification {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+  OUT_OF_OFFICE
+  BOUNCE
+  UNSUBSCRIBE
+  SPAM
+  UNKNOWN
+}
+
+enum SuppressionReason {
+  MANUAL
+  UNSUBSCRIBE
+  HARD_BOUNCE
+  COMPLAINT
+  IMPORT
+  GLOBAL
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  timezone  String   @default("Europe/Belgrade")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members            WorkspaceMember[]
+  gmailAccounts      GmailAccount[]
+  leads              Lead[]
+  suppressions       SuppressionEntry[]
+  campaigns          Campaign[]
+  importJobs         LeadImportJob[]
+  auditLogs          AuditLog[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships WorkspaceMember[]
+  auditLogs   AuditLog[]
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(MEMBER)
+  createdAt   DateTime      @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model GmailAccount {
+  id              String             @id @default(cuid())
+  workspaceId     String
+  email           String
+  displayName     String?
+  googleSubjectId String?
+  health          GmailAccountHealth @default(CONNECTED)
+  healthMessage   String?
+  scopes          String[]
+  encryptedTokens String
+  tokenKeyId      String
+  dailySendLimit  Int                @default(50)
+  sentToday       Int                @default(0)
+  sendWindowStart String?
+  sendWindowEnd   String?
+  historyId       String?
+  watchExpiresAt  DateTime?
+  lastSyncAt      DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sends       SendRecord[]
+  campaigns   Campaign[] @relation("CampaignSendingAccount")
+
+  @@unique([workspaceId, email])
+  @@index([workspaceId, health])
+}
+
+model Lead {
+  id                 String                 @id @default(cuid())
+  workspaceId        String
+  email              String
+  emailNormalized    String
+  firstName          String?
+  lastName           String?
+  company            String?
+  title              String?
+  phone              String?
+  website            String?
+  city               String?
+  state              String?
+  country            String?
+  tags               String[]               @default([])
+  verificationStatus LeadVerificationStatus @default(UNKNOWN)
+  source             String?
+  sourceMeta         Json?
+  customFields       Json?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  workspace    Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  enrollments  CampaignEnrollment[]
+  sendRecords  SendRecord[]
+  replyThreads ReplyThread[]
+
+  @@unique([workspaceId, emailNormalized])
+  @@index([workspaceId, verificationStatus])
+  @@index([workspaceId, company])
+}
+
+model SuppressionEntry {
+  id          String            @id @default(cuid())
+  workspaceId String
+  email       String
+  reason      SuppressionReason
+  note        String?
+  createdAt   DateTime          @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, email])
+}
+
+model LeadImportJob {
+  id          String   @id @default(cuid())
+  workspaceId String
+  fileName    String
+  status      String   @default("pending")
+  stats       Json?
+  errors      Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+}
+
+model Campaign {
+  id                 String         @id @default(cuid())
+  workspaceId        String
+  name               String
+  status             CampaignStatus @default(DRAFT)
+  sendingAccountId   String?
+  timezone           String         @default("Europe/Belgrade")
+  domainDailyCap     Int?
+  trackingOpens      Boolean        @default(true)
+  trackingClicks     Boolean        @default(true)
+  textOnlyTracking   Boolean        @default(false)
+  physicalAddress    String?
+  unsubscribeFooter  Boolean        @default(true)
+  launchedAt         DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  workspace       Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sendingAccount  GmailAccount?      @relation("CampaignSendingAccount", fields: [sendingAccountId], references: [id])
+  sequence        Sequence?
+  enrollments     CampaignEnrollment[]
+  queueJobs       QueueJob[]
+
+  @@index([workspaceId, status])
+}
+
+model Sequence {
+  id         String   @id @default(cuid())
+  campaignId String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  campaign Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  steps    SequenceStep[]
+}
+
+model SequenceStep {
+  id         String           @id @default(cuid())
+  sequenceId String
+  orderIndex Int
+  type       SequenceStepType
+  name       String?
+  config     Json
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  sequence Sequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+
+  @@unique([sequenceId, orderIndex])
+}
+
+model CampaignEnrollment {
+  id              String           @id @default(cuid())
+  campaignId      String
+  leadId          String
+  status          EnrollmentStatus @default(PENDING)
+  currentStepIndex Int             @default(0)
+  nextRunAt       DateTime?
+  stoppedReason   String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, leadId])
+  @@index([campaignId, status, nextRunAt])
+}
+
+model QueueJob {
+  id             String         @id @default(cuid())
+  workspaceId    String
+  campaignId     String?
+  type           String
+  idempotencyKey String         @unique
+  payload        Json
+  status         QueueJobStatus @default(PENDING)
+  attempts       Int            @default(0)
+  maxAttempts    Int            @default(8)
+  runAfter       DateTime       @default(now())
+  lockedAt       DateTime?
+  lastError      String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([status, runAfter])
+  @@index([workspaceId, type])
+}
+
+model SendRecord {
+  id              String      @id @default(cuid())
+  workspaceId     String
+  gmailAccountId  String
+  leadId          String
+  campaignId      String?
+  idempotencyKey  String      @unique
+  gmailMessageId  String?
+  threadId        String?
+  subject         String
+  outcome         SendOutcome @default(QUEUED)
+  errorCode       String?
+  errorMessage    String?
+  sentAt          DateTime?
+  createdAt       DateTime    @default(now())
+
+  gmailAccount GmailAccount @relation(fields: [gmailAccountId], references: [id])
+  lead         Lead         @relation(fields: [leadId], references: [id])
+  events       TrackingEvent[]
+
+  @@index([workspaceId, campaignId])
+  @@index([leadId])
+}
+
+model TrackingEvent {
+  id           String   @id @default(cuid())
+  sendRecordId String
+  type         String
+  token        String   @unique
+  url          String?
+  userAgent    String?
+  ipHash       String?
+  occurredAt   DateTime @default(now())
+
+  sendRecord SendRecord @relation(fields: [sendRecordId], references: [id], onDelete: Cascade)
+
+  @@index([sendRecordId, type])
+}
+
+model ReplyThread {
+  id             String   @id @default(cuid())
+  workspaceId    String
+  leadId         String
+  gmailThreadId  String?
+  subject        String?
+  classification ReplyClassification @default(UNKNOWN)
+  lastMessageAt  DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  lead     Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  messages ReplyMessage[]
+
+  @@index([workspaceId, lastMessageAt])
+}
+
+model ReplyMessage {
+  id            String   @id @default(cuid())
+  threadId      String
+  gmailMessageId String? @unique
+  direction     String
+  snippet       String?
+  bodyText      String?
+  receivedAt    DateTime
+  createdAt     DateTime @default(now())
+
+  thread ReplyThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String?
+  action      String
+  entityType  String
+  entityId    String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id])
+
+  @@index([workspaceId, createdAt])
+}

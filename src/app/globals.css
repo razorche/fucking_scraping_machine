@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7f7f5;
+  --foreground: #1c1c1a;
+  --card: #ffffff;
+  --card-foreground: #1c1c1a;
+  --muted: #ececea;
+  --muted-foreground: #5c5c58;
+  --border: #d8d8d4;
+  --primary: #0ea5e9;
+  --primary-foreground: #041018;
+  --secondary: #e8f7f0;
+  --secondary-foreground: #0f3d2a;
+  --accent: #22d3ee;
+  --accent-foreground: #042028;
+  --destructive: #e85d4c;
+  --destructive-foreground: #fff8f6;
+  --ring: #0ea5e9;
+  --success: #84cc16;
+  --warning: #f59e0b;
+}
+
+.dark {
+  --background: #121211;
+  --foreground: #ededea;
+  --card: #1a1a18;
+  --card-foreground: #ededea;
+  --muted: #262624;
+  --muted-foreground: #a3a39d;
+  --border: #333330;
+  --primary: #38bdf8;
+  --primary-foreground: #041018;
+  --secondary: #1a2e24;
+  --secondary-foreground: #d7f5e4;
+  --accent: #22d3ee;
+  --accent-foreground: #042028;
+  --destructive: #f0715a;
+  --destructive-foreground: #1a0a08;
+  --ring: #38bdf8;
+  --success: #a3e635;
+  --warning: #fbbf24;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
 }

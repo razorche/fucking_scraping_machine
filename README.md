@@ -1,4 +1,13 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fucking Outreach MACHINE (FOM)
+
+Produkcioni B2B cold outreach (Next.js + Supabase/Postgres + Gmail API).
+
+## Vercel
+
+1. Import repo, framework **Next.js**, build: `npm run build`.
+2. Environment variables — kopiraj iz `.env.example` (vrednosti iz Supabase / Google Cloud).
+3. Gmail OAuth redirect: `https://<tvoj-domen>/api/auth/google/callback` (+ isti URI u Google Cloud Credentials).
+4. Provera posle deploya: `/api/health` i `/api/setup/status`.
 
 ## Getting Started
 
